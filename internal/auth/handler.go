@@ -1,4 +1,4 @@
-package user
+package auth
 
 import (
 	"github.com/julienschmidt/httprouter"
@@ -40,25 +40,25 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request, params httprou
 
 func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.WriteHeader(201)
-	w.Write([]byte("this is create user"))
+	w.Write([]byte("this is create auth"))
 }
 
 func (h *handler) GetUserByUUID(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.WriteHeader(200)
-	w.Write([]byte("this is user by id"))
+	w.Write([]byte("this is auth by id"))
 }
 
 func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.WriteHeader(204)
-	w.Write([]byte("this is update user"))
+	w.Write([]byte("this is update auth"))
 }
 
 func (h *handler) PartiallyUpdateUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.WriteHeader(204)
-	w.Write([]byte("this is partially update user"))
+	w.Write([]byte("this is partially update auth"))
 }
 
 func (h *handler) DeleteUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.WriteHeader(204)
-	w.Write([]byte("this is delete user"))
+	w.Write([]byte("this is delete auth"))
 }

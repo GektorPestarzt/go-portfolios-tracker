@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"go-portfolios-tracker/internal/auth"
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
-	"go-portfolios-tracker/internal/user"
+	"go-portfolios-tracker/pkg/repository/sqlite"
 	"net"
 	"net/http"
 	"os"
@@ -21,13 +22,19 @@ func main() {
 	logging.MustLoad(cfg.Env)
 	logger := logging.GetLogger()
 
+	logger.Info("create database")
+	storage, err := sqlite.New(cfg.StoragePath)
+	if err != nil {
+		logger.Fatal("failed to init repository", err)
+	}
+
+	_ = storage
+
 	logger.Info("create router")
-	// log.Println("create router")
 	router := httprouter.New()
 
-	logger.Info("register user handler")
-	//log.Println("register user handler")
-	handler := user.NewHandler(logger)
+	logger.Info("register auth handler")
+	handler := auth.NewHandler(logger)
 	handler.Register(router)
 
 	start(router, cfg)

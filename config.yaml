@@ -1,5 +1,11 @@
 env: "local"
-storage_path: "..."
+storage_path: "./repository.db"
+
+auth:
+  hash_salt: "hash_salt"
+  signing_key: "signing_key"
+  token_ttl: 86400
+
 listen:
   type: "sock"
   host: "0.0.0.0"
