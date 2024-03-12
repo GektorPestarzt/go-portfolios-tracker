@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter"
-	"go-portfolios-tracker/internal/auth"
+	"github.com/gin-gonic/gin"
+	authhttp "go-portfolios-tracker/internal/auth/delivery/http"
+	authrepo "go-portfolios-tracker/internal/auth/repository/sqlite"
+	authusecase "go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/pkg/repository/sqlite"
@@ -27,20 +29,24 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to init repository", err)
 	}
-
-	_ = storage
+	userRepo := authrepo.NewUserRepository(storage)
 
 	logger.Info("create router")
-	router := httprouter.New()
+	router := gin.Default()
+	router.Use(
+		gin.Recovery(),
+		gin.Logger(),
+	)
+
+	authUseCase := authusecase.NewAuthUseCase(userRepo, cfg.Auth.HashSalt, []byte(cfg.Auth.SigningKey), cfg.Auth.TokenTTL)
 
 	logger.Info("register auth handler")
-	handler := auth.NewHandler(logger)
-	handler.Register(router)
+	authhttp.RegisterHTTPEndpoints(router, logger, authUseCase)
 
-	start(router, cfg)
+	run(router, cfg)
 }
 
-func start(router *httprouter.Router, cfg *config.Config) {
+func run(router *gin.Engine, cfg *config.Config) {
 	logger := logging.GetLogger()
 	logger.Info("start application")
 

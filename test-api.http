@@ -1,7 +1,20 @@
-POST http://localhost:1234/users
+POST http://localhost:1234/auth/sign-up
 Content-Type: application/json
 
-{}
+{
+  "username": "ruslan",
+  "password": "12345"
+}
+
+###
+
+GET http://localhost:1234/auth/sign-in
+Content-Type: application/json
+
+{
+  "username": "ruslan",
+  "password": "12345"
+}
 
 > {%
     client.test("Request executed successfully", function () {

@@ -1,7 +1,8 @@
-package auth
+package httprouter
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/handlers"
 	"go-portfolios-tracker/internal/logging"
 	"net/http"
@@ -15,12 +16,14 @@ const (
 )
 
 type handler struct {
-	logger *logging.Logger
+	logger  logging.Logger
+	useCase usecase.AuthUseCase
 }
 
-func NewHandler(logger *logging.Logger) handlers.Handler {
+func NewHandler(logger logging.Logger, useCase usecase.AuthUseCase) handlers.Handler {
 	return &handler{
-		logger: logger,
+		logger:  logger,
+		useCase: useCase,
 	}
 }
 
@@ -38,8 +41,21 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request, params httprou
 	w.Write([]byte("this is list of users"))
 }
 
+type signInput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.WriteHeader(201)
+
+	inp := new(signInput)
+	//if err := cleanenv.ParseJSON(r, inp); err != nil {
+	//}
+
+	if err := h.useCase.SignUp(r.Context(), inp.Username, inp.Password); err != nil {
+
+	}
 	w.Write([]byte("this is create auth"))
 }
 

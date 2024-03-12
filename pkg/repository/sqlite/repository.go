@@ -11,7 +11,7 @@ type Repository struct {
 	db *sql.DB
 }
 
-func New(repositoryPath string) (*Repository, error) {
+func New(repositoryPath string) (*sql.DB /**Repository*/, error) {
 	const op = "repository.sqlite.New"
 
 	db, err := sql.Open("sqlite3", repositoryPath)
@@ -23,9 +23,7 @@ func New(repositoryPath string) (*Repository, error) {
 	CREATE TABLE IF NOT EXISTS portfolios(
 	    uuid INTEGER PRIMARY KEY,
 	    username TEXT NOT NULL UNIQUE,
-		password TEXT NOT NULL,
-		token TEXT NOT NULL,
-		expire_time INTEGER NOT NULL);
+		password TEXT NOT NULL);
 	CREATE INDEX IF NOT EXISTS username_index ON portfolios(username);
 	`)
 	if err != nil {
@@ -37,5 +35,6 @@ func New(repositoryPath string) (*Repository, error) {
 		return nil, fmt.Errorf("%s:%w", op, err)
 	}
 
-	return &Repository{db: db}, nil
+	// return &Repository{db: db}, nil
+	return db, nil
 }

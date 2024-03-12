@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"go-portfolios-tracker/internal/models"
 )
 
@@ -19,10 +20,15 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 func (ur *UserRepository) Get(ctx context.Context, username, password string) (*models.User, error) {
 	row := ur.db.QueryRow(`SELECT uuid, username, password FROM portfolios WHERE username = $1`, username)
 
-	var user *models.User
+	user := &models.User{}
 	err := row.Scan(&user.UUID, &user.Username, &user.Password)
 	if err != nil {
 		return nil, err
+	}
+
+	if password != user.Password {
+		// TODO: refactor error creating
+		return nil, fmt.Errorf("incorrect passport")
 	}
 
 	return user, nil

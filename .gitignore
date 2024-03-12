@@ -2,4 +2,4 @@
 build
 .idea
 /README2.md
-database.db
+*.db

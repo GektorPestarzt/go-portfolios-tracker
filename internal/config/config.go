@@ -16,7 +16,14 @@ const (
 type Config struct {
 	Env         string `yaml:"env" env-default:"local"`
 	StoragePath string `yaml:"storage_path" env-required:"true"`
+	Auth        `yaml:"auth"`
 	Listen      `yaml:"listen"`
+}
+
+type Auth struct {
+	HashSalt   string        `yaml:"hash_salt"`
+	SigningKey string        `yaml:"signing_key"`
+	TokenTTL   time.Duration `yaml:"token_ttl"`
 }
 
 type Listen struct {
