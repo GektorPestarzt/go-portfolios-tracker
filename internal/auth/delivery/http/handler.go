@@ -1,8 +1,10 @@
 package http
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/julienschmidt/httprouter"
+	"go-portfolios-tracker/internal/auth"
 	"go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/logging"
 	"net/http"
@@ -39,6 +41,11 @@ func (h *Handler) SignUp(c *gin.Context) {
 	}
 
 	if err := h.useCase.SignUp(c.Request.Context(), inp.Username, inp.Password); err != nil {
+		if errors.Is(err, auth.ErrUserAlreadyExists) {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -60,8 +67,11 @@ func (h *Handler) SignIn(c *gin.Context) {
 
 	token, err := h.useCase.SignIn(c.Request.Context(), inp.Username, inp.Password)
 	if err != nil {
-		// TODO: Check if user not found
-		// if err == UserNotFound
+		if errors.Is(err, auth.ErrUserNotFound) {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}

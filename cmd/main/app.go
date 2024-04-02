@@ -43,6 +43,9 @@ func main() {
 	logger.Info("register auth handler")
 	authhttp.RegisterHTTPEndpoints(router, logger, authUseCase)
 
+	authMiddleware := authhttp.NewAuthMiddleware(authUseCase)
+	api := router.Group("/api", authMiddleware)
+
 	run(router, cfg)
 }
 

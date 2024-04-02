@@ -3,12 +3,18 @@ package usecase
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"go-portfolios-tracker/internal/auth"
 	"go-portfolios-tracker/internal/models"
 	"time"
 )
+
+type AuthClaims struct {
+	jwt.StandardClaims
+	username string
+}
 
 type AuthUseCase struct {
 	userRepo       auth.Repository
@@ -52,19 +58,40 @@ func (a *AuthUseCase) SignIn(ctx context.Context, username, password string) (st
 
 	user, err := a.userRepo.Get(ctx, username, password)
 	if err != nil {
-		return "", err
+		return "", errors.Join(auth.ErrUserNotFound, err)
 	}
 
-	payload := jwt.MapClaims{
-		"sub": user.Username,
-		"exp": time.Now().Add(a.expireDuration).Unix(),
+	claims := AuthClaims{
+		username: user.Username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(a.expireDuration).Unix(),
+		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString(a.signingKey)
 	if err != nil {
 		return "", err
 	}
 
 	return t, nil
+}
+
+func (a *AuthUseCase) ParseToken(ctx context.Context, accessToken string) (string, error) {
+	token, err := jwt.ParseWithClaims(accessToken, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return a.signingKey, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
+		return claims.username, nil
+	}
+
+	return "", auth.ErrInvalidAccessToken
 }
