@@ -8,6 +8,10 @@ import (
 	authusecase "go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
+	"go-portfolios-tracker/internal/logging/slog"
+	portfoliohttp "go-portfolios-tracker/internal/portfolio/delivery/http"
+	portfoliorepo "go-portfolios-tracker/internal/portfolio/repository/sqlite"
+	portfoliousecase "go-portfolios-tracker/internal/portfolio/usecase/tinkoff"
 	"go-portfolios-tracker/pkg/repository/sqlite"
 	"net"
 	"net/http"
@@ -21,8 +25,7 @@ func main() {
 	cfg := config.MustLoad()
 	fmt.Println(cfg)
 
-	logging.MustLoad(cfg.Env)
-	logger := logging.GetLogger()
+	logger := slog.NewLogger(cfg.Env)
 
 	logger.Info("create database")
 	storage, err := sqlite.New(cfg.StoragePath)
@@ -30,6 +33,7 @@ func main() {
 		logger.Fatal("failed to init repository", err)
 	}
 	userRepo := authrepo.NewUserRepository(storage)
+	portfolioRepo := portfoliorepo.NewPortfolioRepository(nil)
 
 	logger.Info("create router")
 	router := gin.Default()
@@ -38,19 +42,21 @@ func main() {
 		gin.Logger(),
 	)
 
-	authUseCase := authusecase.NewAuthUseCase(userRepo, cfg.Auth.HashSalt, []byte(cfg.Auth.SigningKey), cfg.Auth.TokenTTL)
-
 	logger.Info("register auth handler")
-	authhttp.RegisterHTTPEndpoints(router, logger, authUseCase)
 
-	authMiddleware := authhttp.NewAuthMiddleware(authUseCase)
+	authUseCase := authusecase.NewAuthUseCase(userRepo, cfg.Auth.HashSalt, []byte(cfg.Auth.SigningKey), cfg.Auth.TokenTTL)
+	authhttp.RegisterHTTPEndpoints(router, authUseCase, logger)
+
+	authMiddleware := authhttp.NewAuthMiddleware(authUseCase, logger)
 	api := router.Group("/api", authMiddleware)
 
-	run(router, cfg)
+	portfolioUseCase := portfoliousecase.NewPortfolioUseCase(logger, portfolioRepo)
+	portfoliohttp.RegisterHTTPEndpoints(api, portfolioUseCase, logger)
+
+	run(router, cfg, logger)
 }
 
-func run(router *gin.Engine, cfg *config.Config) {
-	logger := logging.GetLogger()
+func run(router *gin.Engine, cfg *config.Config, logger logging.Logger) {
 	logger.Info("start application")
 
 	var listener net.Listener
@@ -80,7 +86,7 @@ func run(router *gin.Engine, cfg *config.Config) {
 	logger.Fatal(server.Serve(listener))
 }
 
-func mustCreateSocketListener(logger *logging.Logger) net.Listener {
+func mustCreateSocketListener(logger logging.Logger) net.Listener {
 	appDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		logger.Fatal(err)

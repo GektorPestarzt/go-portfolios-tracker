@@ -5,17 +5,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/julienschmidt/httprouter"
 	"go-portfolios-tracker/internal/auth"
-	"go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/logging"
 	"net/http"
 )
 
 type Handler struct {
-	logger  *logging.Logger
-	useCase *usecase.AuthUseCase
+	logger  logging.Logger
+	useCase auth.UseCase
 }
 
-func NewHandler(logger *logging.Logger, useCase *usecase.AuthUseCase) *Handler {
+func NewHandler(useCase auth.UseCase, logger logging.Logger) *Handler {
 	return &Handler{
 		logger:  logger,
 		useCase: useCase,

@@ -32,7 +32,7 @@ func NewAuthUseCase(
 		userRepo:       userRepo,
 		hashSalt:       hashSalt,
 		signingKey:     signingKey,
-		expireDuration: time.Second * tokenTTLSeconds,
+		expireDuration: tokenTTLSeconds,
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/handlers"
-	"go-portfolios-tracker/internal/logging"
+	"go-portfolios-tracker/internal/logging/slog"
 	"net/http"
 )
 
@@ -16,11 +16,11 @@ const (
 )
 
 type handler struct {
-	logger  logging.Logger
+	logger  slog.Logger
 	useCase usecase.AuthUseCase
 }
 
-func NewHandler(logger logging.Logger, useCase usecase.AuthUseCase) handlers.Handler {
+func NewHandler(logger slog.Logger, useCase usecase.AuthUseCase) handlers.Handler {
 	return &handler{
 		logger:  logger,
 		useCase: useCase,

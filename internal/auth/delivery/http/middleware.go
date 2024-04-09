@@ -3,17 +3,20 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"go-portfolios-tracker/internal/auth"
+	"go-portfolios-tracker/internal/logging"
 	"net/http"
 	"strings"
 )
 
 type AuthMiddleware struct {
 	usecase auth.UseCase
+	logger  logging.Logger
 }
 
-func NewAuthMiddleware(usecase auth.UseCase) gin.HandlerFunc {
+func NewAuthMiddleware(usecase auth.UseCase, logger logging.Logger) gin.HandlerFunc {
 	return (&AuthMiddleware{
 		usecase: usecase,
+		logger:  logger,
 	}).Handle
 }
 
@@ -42,6 +45,7 @@ func (m *AuthMiddleware) Handle(c *gin.Context) {
 			return
 		}
 
+		m.logger.Debug("%v", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
