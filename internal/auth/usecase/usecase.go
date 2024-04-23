@@ -13,7 +13,7 @@ import (
 
 type AuthClaims struct {
 	jwt.StandardClaims
-	username string
+	Username string `json:"username"`
 }
 
 type AuthUseCase struct {
@@ -62,7 +62,7 @@ func (a *AuthUseCase) SignIn(ctx context.Context, username, password string) (st
 	}
 
 	claims := AuthClaims{
-		username: user.Username,
+		Username: user.Username,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(a.expireDuration).Unix(),
 		},
@@ -90,7 +90,7 @@ func (a *AuthUseCase) ParseToken(ctx context.Context, accessToken string) (strin
 	}
 
 	if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
-		return claims.username, nil
+		return claims.Username, nil
 	}
 
 	return "", auth.ErrInvalidAccessToken

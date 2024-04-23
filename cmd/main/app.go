@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	portfoliohttp "go-portfolios-tracker/internal/account/delivery/http"
+	portfoliorepo "go-portfolios-tracker/internal/account/repository/sqlite"
+	portfoliousecase "go-portfolios-tracker/internal/account/usecase/tinkoff"
 	authhttp "go-portfolios-tracker/internal/auth/delivery/http"
 	authrepo "go-portfolios-tracker/internal/auth/repository/sqlite"
 	authusecase "go-portfolios-tracker/internal/auth/usecase"
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/internal/logging/slog"
-	portfoliohttp "go-portfolios-tracker/internal/portfolio/delivery/http"
-	portfoliorepo "go-portfolios-tracker/internal/portfolio/repository/sqlite"
-	portfoliousecase "go-portfolios-tracker/internal/portfolio/usecase/tinkoff"
 	"go-portfolios-tracker/pkg/repository/sqlite"
 	"net"
 	"net/http"
@@ -33,7 +33,7 @@ func main() {
 		logger.Fatal("failed to init repository", err)
 	}
 	userRepo := authrepo.NewUserRepository(storage)
-	portfolioRepo := portfoliorepo.NewPortfolioRepository(nil)
+	portfolioRepo := portfoliorepo.NewPortfolioRepository(storage)
 
 	logger.Info("create router")
 	router := gin.Default()

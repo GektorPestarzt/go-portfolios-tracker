@@ -1,4 +1,4 @@
-package portfolio
+package account
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 )
 
 type UseCase interface {
-	Init(ctx context.Context, token string) (int, error)
+	Init(ctx context.Context, username string, token string) error
 	Update(ctx context.Context, id int) error
 	Get(ctx context.Context, id int) (*models.Account, error)
 	Delete(ctx context.Context, id int) error

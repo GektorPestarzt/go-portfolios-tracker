@@ -21,10 +21,10 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (ur *UserRepository) Get(ctx context.Context, username, password string) (*models.User, error) {
-	row := ur.db.QueryRow(`SELECT uuid, username, password FROM portfolios WHERE username = $1`, username)
+	row := ur.db.QueryRow(`SELECT username, password FROM users WHERE username = $1`, username)
 
 	user := &models.User{}
-	err := row.Scan(&user.UUID, &user.Username, &user.Password)
+	err := row.Scan(&user.Username, &user.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (ur *UserRepository) Get(ctx context.Context, username, password string) (*
 }
 
 func (ur *UserRepository) Add(ctx context.Context, user *models.User) error {
-	_, err := ur.db.Exec(`INSERT INTO portfolios (username, password) VALUES (?, ?)`,
+	_, err := ur.db.Exec(`INSERT INTO users (username, password) VALUES (?, ?)`,
 		user.Username,
 		user.Password)
 
