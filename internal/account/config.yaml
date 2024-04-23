@@ -1,5 +1,4 @@
 AccountId: "ACCOUNT_TYPE_TINKOFF"
-APIToken: t.CfWQfzJYUFQ1sPaTeYIcA4k5RCB8ON18Ooi3hs--biRm6UPHhH0mLSvFO77OOdmzORcFVZY5RXRmHg1AlFrJLg
 EndPoint: invest-public-api.tinkoff.ru:443
 AppName: invest-api-go-sdk
 DisableResourceExhaustedRetry: false
