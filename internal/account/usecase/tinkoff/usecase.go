@@ -113,8 +113,13 @@ func (p *PortfolioUseCase) Update(ctx context.Context, id int) error {
 }
 
 func (p *PortfolioUseCase) Get(ctx context.Context, id int) (*models.Account, error) {
-	// TODO
-	return nil, nil
+	account, err := p.portfolioRepo.Get(ctx, id)
+	if err != nil {
+		// TODO
+		return nil, err
+	}
+
+	return account, nil
 }
 
 func (p *PortfolioUseCase) Delete(ctx context.Context, id int) error {
