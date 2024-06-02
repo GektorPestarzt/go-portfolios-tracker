@@ -1,5 +1,5 @@
 AccountId: "ACCOUNT_TYPE_TINKOFF"
-EndPoint: invest-public-api.tinkoff.ru:443
+EndPoint: sandbox-invest-public-api.tinkoff.ru:443
 AppName: invest-api-go-sdk
 DisableResourceExhaustedRetry: false
 DisableAllRetry: false

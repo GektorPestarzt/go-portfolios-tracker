@@ -79,6 +79,7 @@ func New(repositoryPath string) (*sql.DB /**Repository*/, error) {
 		token TEXT,
 		type TEXT NOT NULL,
 		username TEXT NOT NULL,
+		status INTEGER NOT NULL,
 		FOREIGN KEY (username) REFERENCES users(username)
 	);
 	CREATE TABLE IF NOT EXISTS portfolios (

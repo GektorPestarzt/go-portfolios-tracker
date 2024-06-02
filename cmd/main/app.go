@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	portfoliohttp "go-portfolios-tracker/internal/account/delivery/http"
 	portfoliorepo "go-portfolios-tracker/internal/account/repository/sqlite"
 	portfoliousecase "go-portfolios-tracker/internal/account/usecase/tinkoff"
@@ -12,13 +11,27 @@ import (
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/internal/logging/slog"
+	"go-portfolios-tracker/pkg/broker/rabbitmq"
 	"go-portfolios-tracker/pkg/repository/sqlite"
 	"net"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
 )
+
+// @title Portfolio Tracker
+// @version 0.0.0
+// @description Service for collecting and structuring portfolio data of popular Russian investment instruments
+
+// @host localhost:1234
+// @BasePath /
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 
 func main() {
 	os.Setenv("CONFIG_PATH", "./config.yaml")
@@ -34,6 +47,9 @@ func main() {
 	}
 	userRepo := authrepo.NewUserRepository(storage)
 	portfolioRepo := portfoliorepo.NewPortfolioRepository(storage)
+
+	logger.Info("create rabitmq")
+	rabbitMQ := rabbitmq.NewRabbitMQ(logger)
 
 	logger.Info("create router")
 	router := gin.Default()
@@ -51,7 +67,7 @@ func main() {
 	api := router.Group("/api", authMiddleware)
 
 	portfolioUseCase := portfoliousecase.NewPortfolioUseCase(logger, portfolioRepo)
-	portfoliohttp.RegisterHTTPEndpoints(api, portfolioUseCase, logger)
+	portfoliohttp.RegisterHTTPEndpoints(api, portfolioUseCase, rabbitMQ, logger)
 
 	run(router, cfg, logger)
 }

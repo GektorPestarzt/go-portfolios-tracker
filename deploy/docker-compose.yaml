@@ -1,0 +1,14 @@
+name: portfolio_tracker
+
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    env_file:
+      - ./config/.env
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      timeout: 3s
+      retries: 100
+    ports:
+      - "15672:15672"
+      - "5672:5672"

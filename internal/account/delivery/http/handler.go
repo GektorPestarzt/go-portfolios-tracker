@@ -2,23 +2,29 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"go-portfolios-tracker/internal/account"
 	"go-portfolios-tracker/internal/auth"
 	"go-portfolios-tracker/internal/logging"
+	"go-portfolios-tracker/internal/models"
+	"go-portfolios-tracker/pkg/broker"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	logger  logging.Logger
 	useCase account.UseCase
+	broker  broker.Broker
 }
 
-func NewHandler(logger logging.Logger, useCase account.UseCase) *Handler {
+func NewHandler(logger logging.Logger, useCase account.UseCase, broker broker.Broker) *Handler {
 	return &Handler{
 		logger:  logger,
 		useCase: useCase,
+		broker:  broker,
 	}
 }
 
@@ -33,11 +39,13 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.useCase.Init(c.Request.Context(), c.Value(auth.CtxUserKey).(string), inp.Token); err != nil {
+	id, err := h.useCase.Init(c.Request.Context(), c.Value(auth.CtxUserKey).(string), inp.Token)
+	if err != nil {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
+	c.AbortWithStatusJSON(http.StatusCreated, gin.H{"id": strconv.Itoa(int(id))})
 	c.Status(http.StatusCreated)
 }
 
@@ -48,13 +56,22 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	err = h.useCase.Update(c.Request.Context(), id)
+	err = h.useCase.UpdateStatus(c.Request.Context(), int64(id), models.Process)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	c.AbortWithStatus(http.StatusOK)
+	h.broker.Publish(c.Request.Context(), fmt.Sprintf("%d", id))
+	c.Status(http.StatusCreated)
+
+	// err = h.useCase.Update(c.Request.Context(), int64(id))
+	// if err != nil {
+	// 	c.AbortWithStatus(http.StatusInternalServerError)
+	// 	return
+	//}
+
+	//c.AbortWithStatus(http.StatusOK)
 }
 
 func (h *Handler) Get(c *gin.Context) {
@@ -64,7 +81,7 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 
-	acc, err := h.useCase.Get(c.Request.Context(), id)
+	acc, err := h.useCase.Get(c.Request.Context(), int64(id))
 	b, err := json.Marshal(acc)
 
 	if err != nil {

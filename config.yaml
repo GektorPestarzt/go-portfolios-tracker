@@ -4,7 +4,7 @@ storage_path: "./repository.db"
 auth:
   hash_salt: "hash_salt"
   signing_key: "signing_key"
-  token_ttl: 86400s
+  token_ttl: 8640000s
 
 listen:
   type: "port"

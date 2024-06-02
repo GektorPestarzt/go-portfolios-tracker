@@ -1,10 +1,20 @@
 package models
 
+type Status int
+
+const (
+	Created Status = iota
+	Process
+	Success
+	Error
+)
+
 type Account struct {
 	ID         int
 	Token      string
 	Type       string
 	Username   string
+	Status     Status
 	Portfolios []*Portfolio
 }
 

@@ -2,15 +2,15 @@ package tinkoff
 
 import (
 	"context"
-	"errors"
-	"github.com/jinzhu/copier"
-	"github.com/tinkoff/invest-api-go-sdk/investgo"
-	pb "github.com/tinkoff/invest-api-go-sdk/proto"
 	"go-portfolios-tracker/internal/account"
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/internal/logging/slog"
 	"go-portfolios-tracker/internal/models"
+
+	"github.com/jinzhu/copier"
+	"github.com/tinkoff/invest-api-go-sdk/investgo"
+	pb "github.com/tinkoff/invest-api-go-sdk/proto"
 )
 
 type TestUseCase struct {
@@ -41,18 +41,19 @@ func (p *PortfolioUseCase) parsePortfolio(tinkoffRepo *investgo.PortfolioRespons
 	return modelPortfolio, nil
 }
 
-func (p *PortfolioUseCase) Init(ctx context.Context, username string, token string) error {
+func (p *PortfolioUseCase) Init(ctx context.Context, username string, token string) (int64, error) {
 	// TODO: remake type
-	err := p.portfolioRepo.Init(ctx, username, token, "tinkoff")
+	id, err := p.portfolioRepo.Init(ctx, username, token, "tinkoff")
 	if err != nil {
 		// TODO: error
-		return err
+		return -1, err
 	}
 
-	return nil
+	p.portfolioRepo.UpdateStatus(ctx, id, models.Created)
+	return id, nil
 }
 
-func (p *PortfolioUseCase) Update(ctx context.Context, id int) error {
+func (p *PortfolioUseCase) Update(ctx context.Context, id int64) error {
 	/* token, err := p.portfolioRepo.GetToken(ctx, id)
 	if err != nil {
 		// TODO: error
@@ -84,7 +85,7 @@ func (p *PortfolioUseCase) Update(ctx context.Context, id int) error {
 	tinkoffAccounts, err := usersService.GetAccounts()
 	if err != nil {
 		// TODO: handle error
-		p.logger.Fatal("get accounts error")
+		p.logger.Fatalf("get accounts error: %v", err)
 	}
 
 	operationsService := client.NewOperationsServiceClient()
@@ -109,10 +110,14 @@ func (p *PortfolioUseCase) Update(ctx context.Context, id int) error {
 		p.logger.Fatal(err)
 	}
 
-	return nil
+	return p.portfolioRepo.UpdateStatus(ctx, id, models.Success)
 }
 
-func (p *PortfolioUseCase) Get(ctx context.Context, id int) (*models.Account, error) {
+func (p *PortfolioUseCase) UpdateStatus(ctx context.Context, id int64, status models.Status) error {
+	return p.portfolioRepo.UpdateStatus(ctx, id, status)
+}
+
+func (p *PortfolioUseCase) Get(ctx context.Context, id int64) (*models.Account, error) {
 	account, err := p.portfolioRepo.Get(ctx, id)
 	if err != nil {
 		// TODO
@@ -122,7 +127,7 @@ func (p *PortfolioUseCase) Get(ctx context.Context, id int) (*models.Account, er
 	return account, nil
 }
 
-func (p *PortfolioUseCase) Delete(ctx context.Context, id int) error {
+func (p *PortfolioUseCase) Delete(ctx context.Context, id int64) error {
 	err := p.portfolioRepo.Delete(ctx, id)
 	if err != nil {
 		// TODO: error
@@ -134,40 +139,4 @@ func (p *PortfolioUseCase) Delete(ctx context.Context, id int) error {
 
 func NewTestUseCase() *TestUseCase {
 	return &TestUseCase{}
-}
-
-func (tuc *TestUseCase) Ha(ctx context.Context, logger logging.Logger) error {
-	// TODO: change config path
-	config, err := investgo.LoadConfig("internal/account/config.yaml")
-	if err != nil {
-		// TODO: return error
-		logger.Fatal("load config error")
-	}
-
-	client, err := investgo.NewClient(ctx, config, logger)
-	if err != nil {
-		// TODO: handle error
-		logger.Fatal("new client error")
-	}
-
-	usersService := client.NewUsersServiceClient()
-	accounts, err := usersService.GetAccounts()
-	if err != nil {
-		// TODO: handle error
-		logger.Fatal("get accounts error")
-	}
-
-	operationsService := client.NewOperationsServiceClient()
-	portfolioResp, err := operationsService.GetPortfolio(accounts.Accounts[0].Id, pb.PortfolioRequest_RUB)
-	if err != nil {
-		// TODO: return error
-		logger.Fatalf("get account error: %v", err)
-	}
-
-	positions := portfolioResp.Positions
-	for i := range positions {
-		logger.Info(positions[i])
-	}
-
-	return errors.New("HAHAHA")
 }

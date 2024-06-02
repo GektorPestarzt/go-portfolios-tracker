@@ -38,25 +38,26 @@ type positionBytes struct {
 }
 
 // TODO: remake. Test version
-func (pr *PortfolioRepository) Init(ctx context.Context, username string, token string, typeA string) error {
-	_, err := pr.db.Exec(`INSERT INTO accounts (token, type, username) VALUES (?, ?, ?)`,
+func (pr *PortfolioRepository) Init(ctx context.Context, username string, token string, typeA string) (int64, error) {
+	res, err := pr.db.Exec(`INSERT INTO accounts (token, type, username, status) VALUES (?, ?, ?, ?)`,
 		token,
 		typeA,
-		username)
+		username,
+		models.Created)
 	// TODO: remake types of accounts
 
 	if err != nil {
 		// TODO: HA
-		return err
+		return -1, err
 	}
 
-	return nil
+	return res.LastInsertId()
 }
 
-func (pr *PortfolioRepository) Get(ctx context.Context, id int) (*models.Account, error) {
+func (pr *PortfolioRepository) Get(ctx context.Context, id int64) (*models.Account, error) {
 	row := pr.db.QueryRow(`SELECT * FROM accounts WHERE id = ?`, id)
 	account := &models.Account{}
-	err := row.Scan(&account.ID, &account.Token, &account.Type, &account.Username)
+	err := row.Scan(&account.ID, &account.Token, &account.Type, &account.Username, &account.Status)
 	if err != nil {
 		// TODO: HA
 		return nil, err
@@ -182,11 +183,22 @@ func (pr *PortfolioRepository) Update(ctx context.Context, account *models.Accou
 	return nil
 }
 
-func (pr *PortfolioRepository) GetToken(ctx context.Context, id int) (string, error) {
+func (pr *PortfolioRepository) UpdateStatus(ctx context.Context, id int64, status models.Status) error {
+	_, err := pr.db.Exec(`UPDATE accounts SET status = ? WHERE id = ?`,
+		status,
+		id)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pr *PortfolioRepository) GetToken(ctx context.Context, id int64) (string, error) {
 	return "", nil
 }
 
-func (pr *PortfolioRepository) Delete(ctx context.Context, id int) error {
+func (pr *PortfolioRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
