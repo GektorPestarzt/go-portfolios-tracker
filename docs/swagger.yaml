@@ -1,0 +1,55 @@
+basePath: /
+definitions:
+  http.signInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:1234
+info:
+  contact: {}
+  description: Service for collecting and structuring portfolio data of popular Russian
+    investment instruments
+  title: Portfolio Tracker
+  version: 0.0.0
+paths:
+  /auth/sign-up:
+    post:
+      consumes:
+      - application/json
+      description: create account
+      operationId: create-account
+      parameters:
+      - description: account info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.signInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: SignUp
+      tags:
+      - auth
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
