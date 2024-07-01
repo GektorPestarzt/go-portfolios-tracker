@@ -2,13 +2,17 @@ package tinkoff
 
 import (
 	"context"
+	"encoding/json"
 	"go-portfolios-tracker/internal/account"
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/internal/logging/slog"
 	"go-portfolios-tracker/internal/models"
+	"strconv"
+	"time"
 
 	"github.com/jinzhu/copier"
+	"github.com/redis/go-redis/v9"
 	"github.com/tinkoff/invest-api-go-sdk/investgo"
 	pb "github.com/tinkoff/invest-api-go-sdk/proto"
 )
@@ -21,12 +25,14 @@ type TestUseCase struct {
 type PortfolioUseCase struct {
 	logger        logging.Logger
 	portfolioRepo account.Repository
+	redis         *redis.Client
 }
 
-func NewPortfolioUseCase(logger logging.Logger, portfolioRepo account.Repository) *PortfolioUseCase {
+func NewPortfolioUseCase(logger logging.Logger, portfolioRepo account.Repository, rdb *redis.Client) *PortfolioUseCase {
 	return &PortfolioUseCase{
 		logger:        logger,
 		portfolioRepo: portfolioRepo,
+		redis:         rdb,
 	}
 }
 
@@ -110,6 +116,10 @@ func (p *PortfolioUseCase) Update(ctx context.Context, id int64) error {
 		p.logger.Fatal(err)
 	}
 
+	p.logger.Infof("caching %d", id)
+	accountBite, _ := json.Marshal(account)
+	p.redis.Set(ctx, strconv.Itoa(int(id)), string(accountBite), 5*time.Minute)
+
 	return p.portfolioRepo.UpdateStatus(ctx, id, models.Success)
 }
 
@@ -117,7 +127,19 @@ func (p *PortfolioUseCase) UpdateStatus(ctx context.Context, id int64, status mo
 	return p.portfolioRepo.UpdateStatus(ctx, id, status)
 }
 
-func (p *PortfolioUseCase) Get(ctx context.Context, id int64) (*models.Account, error) {
+func (p *PortfolioUseCase) Get(ctx context.Context, id int64) (*models.Account, error) { /*
+		val, err := p.redis.Get(ctx, strconv.Itoa(int(id))).Result()
+		if err == redis.Nil {
+			p.logger.Info("no data of %d in cache", id)
+		} else if err != nil {
+			p.logger.Error("internal error")
+			return nil, err
+		} else {
+			var acc models.Account
+			json.Unmarshal([]byte(val), acc)
+			return &acc, nil
+		}*/
+
 	account, err := p.portfolioRepo.Get(ctx, id)
 	if err != nil {
 		// TODO
@@ -128,7 +150,12 @@ func (p *PortfolioUseCase) Get(ctx context.Context, id int64) (*models.Account, 
 }
 
 func (p *PortfolioUseCase) Delete(ctx context.Context, id int64) error {
-	err := p.portfolioRepo.Delete(ctx, id)
+	_, err := p.redis.Get(ctx, strconv.Itoa(int(id))).Result()
+	if err != nil {
+		p.redis.Del(ctx, strconv.Itoa(int(id)))
+	}
+
+	err = p.portfolioRepo.Delete(ctx, id)
 	if err != nil {
 		// TODO: error
 		return err

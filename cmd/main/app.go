@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 // @title Portfolio Tracker
@@ -54,6 +55,13 @@ func main() {
 		gin.Logger(),
 	)
 
+	logger.Info("connect redis")
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
 	logger.Info("register auth handler")
 
 	authUseCase := authusecase.NewAuthUseCase(userRepo, cfg.Auth.HashSalt, []byte(cfg.Auth.SigningKey), cfg.Auth.TokenTTL)
@@ -62,7 +70,7 @@ func main() {
 	authMiddleware := authhttp.NewAuthMiddleware(authUseCase, logger)
 	api := router.Group("/api", authMiddleware)
 
-	portfolioUseCase := portfoliousecase.NewPortfolioUseCase(logger, portfolioRepo)
+	portfolioUseCase := portfoliousecase.NewPortfolioUseCase(logger, portfolioRepo, rdb)
 	portfoliohttp.RegisterHTTPEndpoints(api, portfolioUseCase, logger)
 
 	run(router, cfg, logger)
