@@ -16,13 +16,13 @@ class FamilyStatus(str, Enum):
 
 class NormalUser(HttpUser):
     wait_time = between(0.2, 0.5)
-    base_path = "/api/account/tinkoff"
+    base_path = "/api/accounts/tinkoff"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjU5OTUwNjIsInVzZXJuYW1lIjoicnVzbGFuIn0.4-b64kcZuHKK11lUWAhzBSZqkLyi4Wini3SVKkaDBQE"
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mjg0ODg0OTEsInVzZXJuYW1lIjoiYWRtaW4ifQ.mcVT0NjT0QwQer9IsjzTte5EoQGuYGzyNUk79dp0QlU"
         }
         self.profile_ids = []
 

@@ -3,10 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-	"github.com/mattn/go-sqlite3"
-	"go-portfolios-tracker/internal/auth"
 	"go-portfolios-tracker/internal/models"
 )
 
@@ -42,14 +39,14 @@ func (ur *UserRepository) Add(ctx context.Context, user *models.User) error {
 		user.Username,
 		user.Password)
 
-	if err != nil {
-		var sqlite3Err sqlite3.Error
-		if errors.As(err, &sqlite3Err) {
-			// if sqlite3Err.Code == sqlite3.ErrConstraint
-			if sqlite3Err.ExtendedCode == sqlite3.ErrConstraintUnique {
-				return auth.ErrUserAlreadyExists
-			}
-		}
+	if err != nil { /*
+			var sqlite3Err sqlite3.Error
+			if errors.As(err, &sqlite3Err) {
+				// if sqlite3Err.Code == sqlite3.ErrConstraint
+				if sqlite3Err.ExtendedCode == sqlite3.ErrConstraintUnique {
+					return auth.ErrUserAlreadyExists
+				}
+			}*/
 
 		return err
 	}

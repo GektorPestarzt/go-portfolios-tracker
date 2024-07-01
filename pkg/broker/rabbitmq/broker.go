@@ -13,10 +13,9 @@ import (
 )
 
 type RabbitMQ struct {
-	Connection    *amqp.Connection
-	Channel       *amqp.Channel
-	ResponseQueue amqp.Queue
-	RequestQueue  amqp.Queue
+	Connection   *amqp.Connection
+	Channel      *amqp.Channel
+	RequestQueue amqp.Queue
 
 	logger logging.Logger
 }
@@ -47,18 +46,6 @@ func NewRabbitMQ(logger logging.Logger) *RabbitMQ {
 		logger.Fatalf("failed to open channel. Error: %s", err)
 	}
 
-	response, err := ch.QueueDeclare(
-		"response",
-		false,
-		false,
-		true,
-		false,
-		nil,
-	)
-	if err != nil {
-		logger.Fatalf("failed to declare a queue. Error: %s", err)
-	}
-
 	request, err := ch.QueueDeclare(
 		"request",
 		false,
@@ -72,15 +59,14 @@ func NewRabbitMQ(logger logging.Logger) *RabbitMQ {
 	}
 
 	return &RabbitMQ{
-		Connection:    conn,
-		Channel:       ch,
-		ResponseQueue: response,
-		RequestQueue:  request,
-		logger:        logger,
+		Connection:   conn,
+		Channel:      ch,
+		RequestQueue: request,
+		logger:       logger,
 	}
 }
 
-func (r *RabbitMQ) Publish(req *http.Request) []byte {
+func (r *RabbitMQ) Publish(req *http.Request) error {
 	data, _ := extractRequestData(req)
 	jsonData, _ := json.Marshal(data)
 
@@ -96,24 +82,11 @@ func (r *RabbitMQ) Publish(req *http.Request) []byte {
 		})
 	if err != nil {
 		r.logger.Error("Failed to publish a message", err)
+		return err
 	}
 	r.logger.Infof(" [x] Sent %s", jsonData)
 
-	msgs, err := r.Channel.Consume(
-		r.ResponseQueue.Name,
-		"",    // consumer
-		true,  // auto-ack
-		false, // exclusive
-		false, // no-local
-		false, // no-wait
-		nil,   // args
-	)
-	if err != nil {
-		r.logger.Error("Failed to consume an answear", err)
-	}
-
-	d := <-msgs
-	return d.Body
+	return nil
 }
 
 func (r *RabbitMQ) Consume() error {
@@ -149,24 +122,7 @@ func (r *RabbitMQ) Consume() error {
 			req.URL.Host = "localhost:1234"
 
 			client := http.Client{}
-			resp, _ := client.Do(req)
-
-			respData, _ := extractResponseData(resp)
-			jsonData, _ := json.Marshal(respData)
-
-			err = r.Channel.Publish(
-				"",
-				r.ResponseQueue.Name,
-				false,
-				false,
-				amqp.Publishing{
-					DeliveryMode: amqp.Persistent,
-					ContentType:  "application/json",
-					Body:         jsonData,
-				})
-			if err != nil {
-				r.logger.Error("Failed to publish a message", err)
-			}
+			client.Do(req)
 
 			r.logger.Info("Done")
 		}

@@ -12,3 +12,17 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
+
+  api:
+    build:
+      context: ..
+      dockerfile: ./deploy/api/Dockerfile
+    env_file:
+      - ./config/.env
+    environment:
+      - AMQP_HOST=rabbitmq
+    ports:
+      - "1234:1234"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
