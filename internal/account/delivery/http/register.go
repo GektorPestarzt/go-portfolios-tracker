@@ -3,13 +3,12 @@ package http
 import (
 	"go-portfolios-tracker/internal/account"
 	"go-portfolios-tracker/internal/logging"
-	"go-portfolios-tracker/pkg/broker"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterHTTPEndpoints(router *gin.RouterGroup, useCase account.UseCase, broker broker.Broker, logger logging.Logger) {
-	h := NewHandler(logger, useCase, broker)
+func RegisterHTTPEndpoints(router *gin.RouterGroup, useCase account.UseCase, logger logging.Logger) {
+	h := NewHandler(logger, useCase)
 
 	accounts := router.Group("/accounts")
 	{

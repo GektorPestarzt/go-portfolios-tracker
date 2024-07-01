@@ -1,21 +1,37 @@
 package rabbitmq
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"go-portfolios-tracker/internal/account"
 	"go-portfolios-tracker/internal/logging"
-	"strconv"
+	"io/ioutil"
+	"net/http"
+	"strings"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type RabbitMQ struct {
-	Connection *amqp.Connection
-	Channel    *amqp.Channel
-	Queue      amqp.Queue
+	Connection    *amqp.Connection
+	Channel       *amqp.Channel
+	ResponseQueue amqp.Queue
+	RequestQueue  amqp.Queue
 
 	logger logging.Logger
+}
+
+type HTTPRequestData struct {
+	Method  string            `json:"method"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
+}
+
+type HTTPResponseData struct {
+	StatusCode int               `json:"statuscode"`
+	Headers    map[string]string `json:headers`
+	Body       string            `json:body`
 }
 
 func NewRabbitMQ(logger logging.Logger) *RabbitMQ {
@@ -31,8 +47,20 @@ func NewRabbitMQ(logger logging.Logger) *RabbitMQ {
 		logger.Fatalf("failed to open channel. Error: %s", err)
 	}
 
-	q, err := ch.QueueDeclare(
-		"update",
+	response, err := ch.QueueDeclare(
+		"response",
+		false,
+		false,
+		true,
+		false,
+		nil,
+	)
+	if err != nil {
+		logger.Fatalf("failed to declare a queue. Error: %s", err)
+	}
+
+	request, err := ch.QueueDeclare(
+		"request",
 		false,
 		false,
 		false,
@@ -44,55 +72,101 @@ func NewRabbitMQ(logger logging.Logger) *RabbitMQ {
 	}
 
 	return &RabbitMQ{
-		Connection: conn,
-		Channel:    ch,
-		Queue:      q,
-		logger:     logger,
+		Connection:    conn,
+		Channel:       ch,
+		ResponseQueue: response,
+		RequestQueue:  request,
+		logger:        logger,
 	}
 }
 
-func (r *RabbitMQ) Publish(ctx context.Context, body string) {
-	err := r.Channel.PublishWithContext(ctx,
+func (r *RabbitMQ) Publish(req *http.Request) []byte {
+	data, _ := extractRequestData(req)
+	jsonData, _ := json.Marshal(data)
+
+	err := r.Channel.Publish(
 		"",
-		r.Queue.Name,
+		r.RequestQueue.Name,
 		false,
 		false,
 		amqp.Publishing{
 			DeliveryMode: amqp.Persistent,
-			ContentType:  "text/plain",
-			Body:         []byte(body),
+			ContentType:  "application/json",
+			Body:         jsonData,
 		})
-
 	if err != nil {
 		r.logger.Error("Failed to publish a message", err)
 	}
-	r.logger.Infof(" [x] Sent %s", body)
+	r.logger.Infof(" [x] Sent %s", jsonData)
+
+	msgs, err := r.Channel.Consume(
+		r.ResponseQueue.Name,
+		"",    // consumer
+		true,  // auto-ack
+		false, // exclusive
+		false, // no-local
+		false, // no-wait
+		nil,   // args
+	)
+	if err != nil {
+		r.logger.Error("Failed to consume an answear", err)
+	}
+
+	d := <-msgs
+	return d.Body
 }
 
-func (r *RabbitMQ) Consume(useCase account.UseCase) error {
+func (r *RabbitMQ) Consume() error {
 	msgs, err := r.Channel.Consume(
-		r.Queue.Name, // queue
-		"",           // consumer
-		true,         // auto-ack
-		false,        // exclusive
-		false,        // no-local
-		false,        // no-wait
-		nil,          // args
+		r.RequestQueue.Name, // queue
+		"",                  // consumer
+		true,                // auto-ack
+		false,               // exclusive
+		false,               // no-local
+		false,               // no-wait
+		nil,                 // args
 	)
-
 	if err != nil {
 		return err
 	}
 
 	var forever chan struct{}
-	ctx := context.WithoutCancel(context.Background())
+	// 	ctx := context.WithoutCancel(context.Background())
 
 	go func() {
 		for d := range msgs {
-			r.logger.Infof("Received a message: %s", d.Body)
+			r.logger.Infof("Received a message")
 
-			id, _ := strconv.Atoi(string(d.Body))
-			useCase.Update(ctx, int64(id))
+			var request HTTPRequestData
+			json.Unmarshal(d.Body, &request)
+
+			req, _ := http.NewRequest(request.Method, request.URL, bytes.NewBuffer([]byte(request.Body)))
+			for key, value := range request.Headers {
+				req.Header.Set(key, value)
+			}
+
+			req.URL.Scheme = "http"
+			req.URL.Host = "localhost:1234"
+
+			client := http.Client{}
+			resp, _ := client.Do(req)
+
+			respData, _ := extractResponseData(resp)
+			jsonData, _ := json.Marshal(respData)
+
+			err = r.Channel.Publish(
+				"",
+				r.ResponseQueue.Name,
+				false,
+				false,
+				amqp.Publishing{
+					DeliveryMode: amqp.Persistent,
+					ContentType:  "application/json",
+					Body:         jsonData,
+				})
+			if err != nil {
+				r.logger.Error("Failed to publish a message", err)
+			}
 
 			r.logger.Info("Done")
 		}
@@ -107,4 +181,43 @@ func (r *RabbitMQ) Consume(useCase account.UseCase) error {
 func (r *RabbitMQ) Close() {
 	r.Channel.Close()
 	r.Connection.Close()
+}
+
+func extractRequestData(r *http.Request) (*HTTPRequestData, error) {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	headers := make(map[string]string)
+	for name, values := range r.Header {
+		headers[name] = strings.Join(values, " ")
+	}
+
+	return &HTTPRequestData{
+		Method:  r.Method,
+		URL:     r.URL.String(),
+		Headers: headers,
+		Body:    string(bodyBytes),
+	}, nil
+}
+
+func extractResponseData(r *http.Response) (*HTTPResponseData, error) {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	headers := make(map[string]string)
+	for name, values := range r.Header {
+		headers[name] = strings.Join(values, " ")
+	}
+
+	return &HTTPResponseData{
+		StatusCode: r.StatusCode,
+		Headers:    headers,
+		Body:       string(bodyBytes),
+	}, nil
 }

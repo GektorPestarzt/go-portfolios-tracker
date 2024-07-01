@@ -1,12 +1,9 @@
 package broker
 
-import (
-	"context"
-	"go-portfolios-tracker/internal/account"
-)
+import "net/http"
 
 type Broker interface {
-	Publish(ctx context.Context, body string)
-	Consume(useCase account.UseCase) error
+	Publish(r *http.Request) []byte
+	Consume() error
 	Close()
 }

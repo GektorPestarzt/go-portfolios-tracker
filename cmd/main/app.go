@@ -11,7 +11,6 @@ import (
 	"go-portfolios-tracker/internal/config"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/internal/logging/slog"
-	"go-portfolios-tracker/pkg/broker/rabbitmq"
 	"go-portfolios-tracker/pkg/repository/sqlite"
 	"net"
 	"net/http"
@@ -48,9 +47,6 @@ func main() {
 	userRepo := authrepo.NewUserRepository(storage)
 	portfolioRepo := portfoliorepo.NewPortfolioRepository(storage)
 
-	logger.Info("create rabitmq")
-	rabbitMQ := rabbitmq.NewRabbitMQ(logger)
-
 	logger.Info("create router")
 	router := gin.Default()
 	router.Use(
@@ -67,7 +63,7 @@ func main() {
 	api := router.Group("/api", authMiddleware)
 
 	portfolioUseCase := portfoliousecase.NewPortfolioUseCase(logger, portfolioRepo)
-	portfoliohttp.RegisterHTTPEndpoints(api, portfolioUseCase, rabbitMQ, logger)
+	portfoliohttp.RegisterHTTPEndpoints(api, portfolioUseCase, logger)
 
 	run(router, cfg, logger)
 }

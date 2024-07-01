@@ -2,12 +2,10 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-portfolios-tracker/internal/account"
 	"go-portfolios-tracker/internal/auth"
 	"go-portfolios-tracker/internal/logging"
 	"go-portfolios-tracker/internal/models"
-	"go-portfolios-tracker/pkg/broker"
 	"net/http"
 	"strconv"
 
@@ -17,14 +15,12 @@ import (
 type Handler struct {
 	logger  logging.Logger
 	useCase account.UseCase
-	broker  broker.Broker
 }
 
-func NewHandler(logger logging.Logger, useCase account.UseCase, broker broker.Broker) *Handler {
+func NewHandler(logger logging.Logger, useCase account.UseCase) *Handler {
 	return &Handler{
 		logger:  logger,
 		useCase: useCase,
-		broker:  broker,
 	}
 }
 
@@ -62,16 +58,16 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	h.broker.Publish(c.Request.Context(), fmt.Sprintf("%d", id))
-	c.Status(http.StatusCreated)
+	// h.broker.Publish(c.Request.Context(), fmt.Sprintf("%d", id))
+	// c.Status(http.StatusCreated)
 
-	// err = h.useCase.Update(c.Request.Context(), int64(id))
-	// if err != nil {
-	// 	c.AbortWithStatus(http.StatusInternalServerError)
-	// 	return
-	//}
+	err = h.useCase.Update(c.Request.Context(), int64(id))
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 
-	//c.AbortWithStatus(http.StatusOK)
+	c.AbortWithStatus(http.StatusOK)
 }
 
 func (h *Handler) Get(c *gin.Context) {
