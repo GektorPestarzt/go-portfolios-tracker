@@ -1,5 +1,16 @@
-PUT http://localhost:1234/api/portfolios
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTI3NDcxNzN9.QSL9aHQtdEX82DhD-UJPnHpEdcj2ZC_LvelgqhsQQLE
+POST http://localhost:1234/api/accounts/tinkoff
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTM5ODA1NzYsInVzZXJuYW1lIjoicnVzbGFuIn0.v6yw3Vf_oCMHYljOU-0VmQW9NihhfrHggf4AHTM_p44
+
+{
+  "token": "t.PSA_VJvF2o48h7XaBtMnL52wNzxXgIN0In1Owgg9cHybqo4PVZJs6opJi-mb5wAAIOSRGZwKWVq8MHEx41BMQQ"
+}
+
+###
+
+PUT http://localhost:1234/api/accounts/tinkoff/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTM5ODA1NzYsInVzZXJuYW1lIjoicnVzbGFuIn0.v6yw3Vf_oCMHYljOU-0VmQW9NihhfrHggf4AHTM_p44
 
 ###
 
@@ -16,6 +27,28 @@ Content-Type: application/json
         client.assert(response.status === 201, "Response status is not 201");
     });
 %}
+
+###
+
+POST http://localhost:1234/auth/sign-up
+Content-Type: application/json
+
+{
+  "username": "ruslan",
+  "password": "12345"
+}
+
+###
+
+PUT http://localhost:1234/api/accounts/tinkoff/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTM5ODA1NzYsInVzZXJuYW1lIjoicnVzbGFuIn0.v6yw3Vf_oCMHYljOU-0VmQW9NihhfrHggf4AHTM_p44
+
+###
+
+GET http://localhost:1234/api/accounts/tinkoff/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTM5ODA1NzYsInVzZXJuYW1lIjoicnVzbGFuIn0.v6yw3Vf_oCMHYljOU-0VmQW9NihhfrHggf4AHTM_p44
 
 ###
 

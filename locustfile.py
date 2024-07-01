@@ -22,7 +22,7 @@ class NormalUser(HttpUser):
         super().__init__(*args, **kwargs)
         self.headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTc0Mjk1NjcsInVzZXJuYW1lIjoicnVzbGFuIn0.GCdLcvkcOjZVMMCC0r6MOOR6y_K9l6Zy3jYSOUT-c0I"
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjU5OTUwNjIsInVzZXJuYW1lIjoicnVzbGFuIn0.4-b64kcZuHKK11lUWAhzBSZqkLyi4Wini3SVKkaDBQE"
         }
         self.profile_ids = []
 

@@ -1,5 +1,6 @@
 package server
 
+/*
 import (
 	"go-portfolios-tracker/internal/auth"
 	authusecase "go-portfolios-tracker/internal/auth/usecase"
@@ -17,3 +18,4 @@ func NewApp() *App {
 		authUC: authusecase.NewAuthUseCase(),
 	}
 }
+*/
