@@ -24,14 +24,14 @@
    cd deploy
    docker-compose up
    ```
-2. Запуск сервера (Да, сервер запускается не в виртуальной среде из-за "Since Docker is a US company, we must comply with US export control regulations." А на танцы с бубном уже времени не было):
+2. Запуск сервера:
    ```bash
-   go run cmd/main/app.go
-   go run cmd/consumer/consumer.go
+   go run cmd/worker/app.go
+   go run cmd/scanner/app.go
    ```
 3. Запук тестирования:
    ```bash
-   locust -H http://127.0.0.1:1234
+   locust -H http://127.0.0.1:8080
    ```
 
 ## Нагрузочное тестирование
